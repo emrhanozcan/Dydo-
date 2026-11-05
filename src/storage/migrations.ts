@@ -11,13 +11,26 @@ export function migrateState(input: unknown): ExtensionState {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     settings: { ...defaults.settings, ...(candidate.settings ?? {}) },
     vehicles: Array.isArray(candidate.vehicles)
-      ? candidate.vehicles.map((vehicle) => ({
-          ...vehicle,
-          keywords: Array.isArray(vehicle.keywords) ? vehicle.keywords : [],
-          learnedKeywords: Array.isArray(vehicle.learnedKeywords) ? vehicle.learnedKeywords : [],
-        }))
+      ? candidate.vehicles.map((vehicle) => {
+          const defVeh = defaults.vehicles.find((d) => d.id === vehicle.id);
+          const combinedLearned = Array.from(new Set([
+            ...(Array.isArray(vehicle.learnedKeywords) ? vehicle.learnedKeywords : []),
+            ...(defVeh?.learnedKeywords || []),
+          ]));
+          const combinedKeywords = Array.from(new Set([
+            ...(Array.isArray(vehicle.keywords) ? vehicle.keywords : []),
+            ...(defVeh?.keywords || []),
+          ]));
+          return {
+            ...vehicle,
+            keywords: combinedKeywords,
+            learnedKeywords: combinedLearned,
+          };
+        })
       : defaults.vehicles,
-    learnedAddresses: Array.isArray(candidate.learnedAddresses) ? candidate.learnedAddresses : [],
+    learnedAddresses: Array.isArray(candidate.learnedAddresses) && candidate.learnedAddresses.length > 0
+      ? candidate.learnedAddresses
+      : defaults.learnedAddresses,
     seenOrders: candidate.seenOrders && typeof candidate.seenOrders === "object" ? candidate.seenOrders : {},
     orderHistory: Array.isArray(candidate.orderHistory) ? candidate.orderHistory : [],
     logs: Array.isArray(candidate.logs) ? candidate.logs : [],

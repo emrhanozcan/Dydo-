@@ -28,7 +28,7 @@ export function parseBackup(raw: string): BackupPayload {
   const data: unknown = JSON.parse(raw);
   if (!data || typeof data !== "object") throw new Error("Geçersiz yedek dosyası.");
   const candidate = data as Partial<BackupPayload>;
-  if (![1, 2, 3, 4, 5, 6, 7, CURRENT_SCHEMA_VERSION].includes(candidate.schemaVersion ?? -1)) throw new Error("Desteklenmeyen şema sürümü.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, CURRENT_SCHEMA_VERSION].includes(candidate.schemaVersion ?? -1)) throw new Error("Desteklenmeyen şema sürümü.");
   if (!candidate.settings || !Array.isArray(candidate.vehicles) || !Array.isArray(candidate.learnedAddresses)) {
     throw new Error("Yedek gerekli alanları içermiyor.");
   }
