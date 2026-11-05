@@ -8,16 +8,16 @@ export const PRM_TEXT = {
 export const REQUIRED_ORDER_COLUMNS = ["orderNumber", "address", "deliveryPerson"] as const;
 
 export const COLUMN_ALIASES = {
-  orderNumber: ["sipariş numarası", "siparis numarasi", "sipariş no", "siparis no"],
+  orderNumber: ["sipariş numarası", "siparis numarasi", "sipariş no", "siparis no", "sipariş numara", "siparis numara"],
   secondaryId: ["ikinci numara", "referans no"],
   channel: ["sipariş kanalı", "siparis kanali", "kanal"],
-  customerName: ["müşteri adı", "musteri adi", "müşteri"],
-  phone: ["telefon no", "telefon"],
-  address: ["müşteri adresi", "musteri adresi", "adres"],
+  customerName: ["müşteri adı", "musteri adi", "müşteri", "musteri"],
+  phone: ["telefon no", "telefon", "müşteri telefon numarası", "musteri telefon numarasi", "gsm", "tel"],
+  address: ["müşteri adresi", "musteri adresi", "adres", "müşteri adres", "musteri adres"],
   details: ["sipariş detayı", "siparis detayi", "detay"],
   notes: ["notlar", "not"],
   status: ["sipariş durumu", "siparis durumu", "durum"],
-  deliveryPerson: ["teslimatçı", "teslimatci", "kurye"],
+  deliveryPerson: ["teslimatçı", "teslimatci", "araç", "arac", "kurye", "teslimatçı id", "teslimatci id"],
   delay: ["gecikme bildirimi", "gecikme"],
   amount: ["sipariş tutarı", "siparis tutari", "tutar"],
   paymentType: ["ödeme tipi", "odeme tipi"],
