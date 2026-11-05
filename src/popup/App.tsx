@@ -109,6 +109,29 @@ export function App() {
         {state.settings.assignmentMode === "automatic" && <p className="caution">Yalnızca kesin eşleşmiş ve aktif araçlara otomatik atama yapılır.</p>}
       </Section>
 
+      <div style={{ margin: "14px 0 10px 0" }}>
+        <button
+          onClick={() => openOptionsTab("learned")}
+          style={{
+            width: "100%",
+            background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+            color: "#38bdf8",
+            border: "1px solid #38bdf8",
+            borderRadius: 10,
+            padding: "10px",
+            fontWeight: "bold",
+            fontSize: 12,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          🎓 Adres & Araç Öğrenme Modülü ({Object.keys(state.customerPreferences || {}).length})
+        </button>
+      </div>
+
       <nav>
         <button onClick={() => openOptionsTab("reports")}>Raporlar</button>
         <button onClick={() => openOptionsTab("whatsapp")}>WhatsApp</button>

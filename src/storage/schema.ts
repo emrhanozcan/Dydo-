@@ -1885,5 +1885,13 @@ export function createDefaultState(): ExtensionState {
       syncedOrdersCount: 0,
     },
     runtime: { health: "tab_not_found" },
+    customerPreferences: {},
+    historyLearner: {
+      isRunning: false,
+      currentPage: 0,
+      totalOrdersScraped: 0,
+      totalCustomersLearned: 0,
+      lastRunAt: 0,
+    },
   };
 }

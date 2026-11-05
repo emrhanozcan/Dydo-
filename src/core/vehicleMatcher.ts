@@ -1,4 +1,4 @@
-import type { LearnedAddress, MatchDecision, PrmOrder, Vehicle } from "../shared/types";
+import type { CustomerDeliveryPreference, LearnedAddress, MatchDecision, PrmOrder, Vehicle } from "../shared/types";
 import { normalizeAddress } from "./addressNormalizer";
 
 const BAHCEKOY_KEYWORD = "bahcekoy";
@@ -9,7 +9,52 @@ export function matchOrderVehicle(
   order: PrmOrder,
   vehicles: Vehicle[],
   learnedAddresses: LearnedAddress[],
+  customerPreferences?: Record<string, CustomerDeliveryPreference>,
 ): MatchDecision {
+  // 1. ÖNCELİK: Geçmiş Siparişlerden Öğrenilen Müşteri Teslimat Tercihi
+  // (Müşteriye geçmişte en çok teslimat yapan araca otomatik atama kuralı)
+  if (customerPreferences && Object.keys(customerPreferences).length > 0) {
+    const cleanPhone = (order.phone || "").replace(/\D/g, "");
+    const normalizedAddr = normalizeAddress(order.rawAddress);
+
+    let matchedPref: CustomerDeliveryPreference | undefined;
+
+    // A. Telefon Numarası ile Eşleşme (En güvenilir)
+    if (cleanPhone.length >= 7) {
+      matchedPref = Object.values(customerPreferences).find((p) => {
+        const prefPhone = (p.phone || "").replace(/\D/g, "");
+        return prefPhone.length >= 7 && (cleanPhone.endsWith(prefPhone) || prefPhone.endsWith(cleanPhone));
+      });
+    }
+
+    // B. Tam veya Kısmi Adres Eşleşmesi
+    if (!matchedPref && normalizedAddr.length >= 10) {
+      matchedPref = Object.values(customerPreferences).find((p) => {
+        return p.normalizedAddress && (normalizedAddr.includes(p.normalizedAddress) || p.normalizedAddress.includes(normalizedAddr));
+      });
+    }
+
+    // C. Müşteri Adı ile Eşleşme
+    if (!matchedPref && order.customerName && order.customerName.trim().length >= 4) {
+      const normName = normalizeAddress(order.customerName);
+      matchedPref = Object.values(customerPreferences).find((p) => {
+        return p.customerName && normalizeAddress(p.customerName) === normName;
+      });
+    }
+
+    if (matchedPref && matchedPref.topVehicleId) {
+      const targetVehicle = vehicles.find((v) => v.id === matchedPref!.topVehicleId);
+      if (targetVehicle && targetVehicle.active) {
+        return decisionForVehicle(
+          matchedPref.topVehicleId,
+          vehicles,
+          "customer_history",
+          `Müşteriye En Çok Teslim Eden: ${matchedPref.topVehicleName || targetVehicle.shortName} (${matchedPref.topCount} / ${matchedPref.totalDeliveries} teslimat)`
+        );
+      }
+    }
+  }
+
   const normalizedAddress = normalizeAddress(order.rawAddress);
   if (containsWholeKeyword(normalizedAddress, BAHCEKOY_KEYWORD)) {
     const minutes = orderMinuteOfDay(order);

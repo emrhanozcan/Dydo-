@@ -16,6 +16,7 @@ import { OrderOverlay } from "./overlay";
 import { detectPage, getDiagnostics, type PageKind } from "./prmDetector";
 import { scrapeAllProductPrices } from "../productPrices/productPriceScraper";
 import { fetchRemoteAssignmentsFromCloud, initializeCloudSync, isCloudConfigured, syncOrderToCloud, syncOrdersToCloud, syncReportsToCloud } from "../cloud/cloudSync";
+import { injectOrderListControlBanner, isOrderListPage, runHistoryLearningProcess } from "../historyLearner/historyLearner";
 
 let state: ExtensionState;
 let observer: OrderObserver | null = null;
@@ -122,6 +123,10 @@ async function activateCurrentPage(force = false): Promise<void> {
     observedTable = null;
   }
   activePage = page;
+  if (isOrderListPage()) {
+    injectOrderListControlBanner();
+    return;
+  }
   if (page === "product_prices") {
     await runProductPriceScrape();
     return;
@@ -348,6 +353,12 @@ async function reportStatus(health: ExtensionState["runtime"]["health"]): Promis
 }
 
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
+  if (message.type === MESSAGE.START_ORDER_HISTORY_LEARN) {
+    void runHistoryLearningProcess(message.maxPages)
+      .then((res) => sendResponse({ ok: true, ...res }))
+      .catch((error: unknown) => sendResponse({ ok: false, error: error instanceof Error ? error.message : String(error) }));
+    return true;
+  }
   if (message.type === MESSAGE.SCRAPE_PRODUCT_PRICES) {
     void runProductPriceScrape().then(() => sendResponse({ ok: true })).catch((error: unknown) => sendResponse({ ok: false, error: error instanceof Error ? error.message : String(error) }));
     return true;

@@ -22,6 +22,9 @@ export const MESSAGE = {
   REVIEW_WHATSAPP_ORDER: "REVIEW_WHATSAPP_ORDER",
   PING_WHATSAPP: "PING_WHATSAPP",
   RECONNECT_WHATSAPP: "RECONNECT_WHATSAPP",
+  START_ORDER_HISTORY_LEARN: "START_ORDER_HISTORY_LEARN",
+  STOP_ORDER_HISTORY_LEARN: "STOP_ORDER_HISTORY_LEARN",
+  ORDER_HISTORY_LEARN_PROGRESS: "ORDER_HISTORY_LEARN_PROGRESS",
 } as const;
 
 export type ExtensionMessage =
@@ -42,7 +45,10 @@ export type ExtensionMessage =
   | { type: typeof MESSAGE.WHATSAPP_MESSAGE; message: WhatsAppMessage }
   | { type: typeof MESSAGE.REVIEW_WHATSAPP_ORDER; fingerprint: string; action: "approve" | "ignore"; editedOrder?: ParsedWhatsAppOrder }
   | { type: typeof MESSAGE.PING_WHATSAPP }
-  | { type: typeof MESSAGE.RECONNECT_WHATSAPP };
+  | { type: typeof MESSAGE.RECONNECT_WHATSAPP }
+  | { type: typeof MESSAGE.START_ORDER_HISTORY_LEARN; maxPages?: number }
+  | { type: typeof MESSAGE.STOP_ORDER_HISTORY_LEARN }
+  | { type: typeof MESSAGE.ORDER_HISTORY_LEARN_PROGRESS; page: number; totalOrders: number; totalCustomers: number; complete?: boolean; error?: string };
 
 export interface MessageResponse {
   ok: boolean;

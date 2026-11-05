@@ -48,5 +48,7 @@ export function migrateState(input: unknown): ExtensionState {
     whatsappRuntime: { ...defaults.whatsappRuntime, ...(candidate.whatsappRuntime ?? {}) },
     cloudAccount: { ...defaults.cloudAccount, ...(candidate.cloudAccount ?? {}) },
     runtime: { ...defaults.runtime, ...(candidate.runtime ?? {}) },
+    customerPreferences: candidate.customerPreferences && typeof candidate.customerPreferences === "object" ? candidate.customerPreferences : defaults.customerPreferences,
+    historyLearner: { ...defaults.historyLearner, ...(candidate.historyLearner ?? {}) },
   };
 }

@@ -10,7 +10,7 @@ export interface OrderPlan {
 }
 
 export function planOrder(order: PrmOrder, state: ExtensionState, domCompatible = true): OrderPlan {
-  const decision = matchOrderVehicle(order, state.vehicles, state.learnedAddresses);
+  const decision = matchOrderVehicle(order, state.vehicles, state.learnedAddresses, state.customerPreferences);
   const safety = evaluateAssignment(state.settings.assignmentMode, decision, domCompatible);
   return { order, decision, ...safety };
 }

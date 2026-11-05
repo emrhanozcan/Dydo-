@@ -54,7 +54,7 @@ export function App() {
         {tab === "whatsapp" && <WhatsAppDashboard state={state} mutate={mutate} refresh={refresh} flash={flash} />}
         {tab === "prices" && <ProductPrices state={state} mutate={mutate} refresh={refresh} flash={flash} />}
         {tab === "vehicles" && <Vehicles state={state} mutate={mutate} flash={flash} />}
-        {tab === "learned" && <Learned state={state} mutate={mutate} />}
+        {tab === "learned" && <Learned state={state} mutate={mutate} refresh={refresh} flash={flash} />}
         {tab === "history" && <History state={state} />}
         {tab === "settings" && <SettingsPanel state={state} mutate={mutate} refresh={refresh} flash={flash} />}
         {tab === "cloud" && <CloudPanel state={state} refresh={refresh} flash={flash} />}
@@ -246,16 +246,330 @@ function Vehicles({ state, mutate, flash }: PanelProps & { flash: (message: stri
   </>;
 }
 
-function Learned({ state, mutate }: PanelProps) {
+function Learned({ state, mutate, refresh, flash }: PanelProps & { refresh: () => Promise<void>; flash: (message: string) => void }) {
+  const [subTab, setSubTab] = useState<"customers" | "addresses">("customers");
   const [search, setSearch] = useState("");
-  const entries = useMemo(() => state.learnedAddresses.filter((entry) => entry.rawExample.toLocaleLowerCase("tr-TR").includes(search.toLocaleLowerCase("tr-TR"))), [state.learnedAddresses, search]);
+  const [isStarting, setIsStarting] = useState(false);
+
+  const customerList = useMemo(() => {
+    const list = Object.values(state.customerPreferences || {});
+    if (!search.trim()) return list;
+    const q = search.toLocaleLowerCase("tr-TR");
+    return list.filter((c) =>
+      c.customerName.toLocaleLowerCase("tr-TR").includes(q) ||
+      c.phone.includes(q) ||
+      c.rawAddress.toLocaleLowerCase("tr-TR").includes(q)
+    );
+  }, [state.customerPreferences, search]);
+
+  const entries = useMemo(() => {
+    return state.learnedAddresses.filter((entry) =>
+      entry.rawExample.toLocaleLowerCase("tr-TR").includes(search.toLocaleLowerCase("tr-TR")) ||
+      entry.normalizedAddress.includes(search.toLocaleLowerCase("tr-TR"))
+    );
+  }, [state.learnedAddresses, search]);
+
+  async function startHistoryLearning() {
+    setIsStarting(true);
+    try {
+      flash("Geçmiş siparişleri tarama isteği PRM sekmesine gönderildi...");
+      const res = await sendMessage({ type: MESSAGE.START_ORDER_HISTORY_LEARN });
+      if (!res.ok) {
+        flash(res.error || "Tarama başlatılamadı.");
+      } else {
+        flash("PRM Sipariş Listesi sekmesi açıldı ve geçmiş sipariş taraması başlatıldı!");
+      }
+      await refresh();
+    } catch (err) {
+      flash(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsStarting(false);
+    }
+  }
+
+  const historyStatus = state.historyLearner;
+
   return <>
-    <PageTitle title="Öğrenilmiş Adresler" subtitle="Onaylanmış atamalardan oluşan kalıcı adres–araç eşleşmeleri." />
-    <input className="search" placeholder="Adres ara…" value={search} onChange={(event) => setSearch(event.target.value)} />
-    <section className="table-card"><table><thead><tr><th>Adres</th><th>Araç</th><th>Kullanım</th><th>Kaynak</th><th /></tr></thead><tbody>
-      {entries.map((entry) => <tr key={entry.id}><td><b>{entry.rawExample}</b><small>{entry.normalizedAddress}</small></td><td><select value={entry.vehicleId} onChange={(event) => mutate((current) => { const target = current.learnedAddresses.find((item) => item.id === entry.id); if (target) { target.vehicleId = event.target.value; target.updatedAt = Date.now(); } })}>{state.vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.shortName}</option>)}</select></td><td>{entry.useCount}</td><td>{entry.source}</td><td><button className="delete" onClick={() => mutate((current) => { current.learnedAddresses = current.learnedAddresses.filter((item) => item.id !== entry.id); })}>Sil</button></td></tr>)}
-      {!entries.length && <tr><td colSpan={5} className="empty">Kayıt bulunamadı.</td></tr>}
-    </tbody></table></section>
+    <PageTitle
+      title="Öğrenilmiş Adresler & Müşteri Tercihleri"
+      subtitle="Geçmiş siparişlerden ve canlı atamalardan öğrenilen müşteri–araç dağılımı ve otomatik yönlendirme kuralları."
+    />
+
+    {/* Hero: Adres Öğrenme Modülü */}
+    <section className="card" style={{
+      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+      color: "#ffffff",
+      borderRadius: 16,
+      border: "1px solid #38bdf8",
+      padding: 24,
+      marginBottom: 24,
+      boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+        <div style={{ maxWidth: 640 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            <span style="font-size: 26px;">🎓</span>
+            <h2 style={{ margin: 0, fontSize: 20, color: "#38bdf8" }}>Geçmiş Siparişlerden Adres Öğrenme Modülü</h2>
+          </div>
+          <p style={{ margin: "6px 0 16px 0", color: "#cbd5e1", fontSize: 13, lineHeight: 1.6 }}>
+            Bu modül, PRM Sipariş Listesi sayfasına giderek tüm filtreleri sıfırlar ve geçmişteki siparişleri geriye doğru sayfa sayfa inceler.
+            Her müşteriye hangi teslimatçının (Aracın) kaç kez teslimat yaptığı hesaplanır ve gelecekteki siparişlerde <b>en çok teslimat yapan araç</b> otomatik olarak atanır.
+          </p>
+
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            <div style={{ background: "rgba(255,255,255,0.08)", padding: "10px 16px", borderRadius: 10 }}>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>ÖĞRENİLEN MÜŞTERİ</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: "#4ade80" }}>{Object.keys(state.customerPreferences || {}).length}</div>
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.08)", padding: "10px 16px", borderRadius: 10 }}>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>ÖĞRENİLEN ADRES KURALI</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: "#38bdf8" }}>{state.learnedAddresses.length}</div>
+            </div>
+            {historyStatus?.lastRunAt && (
+              <div style={{ background: "rgba(255,255,255,0.08)", padding: "10px 16px", borderRadius: 10 }}>
+                <div style={{ fontSize: 11, color: "#94a3b8" }}>SON TARAMA</div>
+                <div style={{ fontSize: 13, fontWeight: "bold", color: "#facc15", marginTop: 4 }}>
+                  {new Date(historyStatus.lastRunAt).toLocaleDateString("tr-TR")} {new Date(historyStatus.lastRunAt).toLocaleTimeString("tr-TR")}
+                </div>
+              </div>
+            )}
+          </div>
+          {historyStatus?.statusMessage && (
+            <div style={{ marginTop: 12, fontSize: 12, color: "#a7f3d0" }}>
+              ✓ {historyStatus.statusMessage}
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={() => void startHistoryLearning()}
+          disabled={isStarting || historyStatus?.isRunning}
+          style={{
+            background: "#2563eb",
+            color: "white",
+            border: "none",
+            borderRadius: 12,
+            padding: "14px 22px",
+            fontWeight: "bold",
+            fontSize: 14,
+            cursor: "pointer",
+            boxShadow: "0 4px 14px rgba(37,99,235,0.4)",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {isStarting || historyStatus?.isRunning ? "⏳ Tarama Başlatılıyor..." : "🚀 PRM'den Geçmiş Siparişleri Tara ve Öğren"}
+        </button>
+      </div>
+    </section>
+
+    {/* Alt Sekme Butonları */}
+    <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <button
+        style={{
+          border: "none",
+          padding: "10px 18px",
+          borderRadius: 10,
+          fontWeight: "bold",
+          fontSize: 13,
+          cursor: "pointer",
+          background: subTab === "customers" ? "#0f766e" : "#e2e8f0",
+          color: subTab === "customers" ? "#ffffff" : "#475569",
+        }}
+        onClick={() => setSubTab("customers")}
+      >
+        👥 Müşteri Teslimat Tercihleri ({Object.keys(state.customerPreferences || {}).length})
+      </button>
+
+      <button
+        style={{
+          border: "none",
+          padding: "10px 18px",
+          borderRadius: 10,
+          fontWeight: "bold",
+          fontSize: 13,
+          cursor: "pointer",
+          background: subTab === "addresses" ? "#0f766e" : "#e2e8f0",
+          color: subTab === "addresses" ? "#ffffff" : "#475569",
+        }}
+        onClick={() => setSubTab("addresses")}
+      >
+        📍 Öğrenilmiş Adres Eşleşmeleri ({state.learnedAddresses.length})
+      </button>
+    </div>
+
+    <input
+      className="search"
+      placeholder={subTab === "customers" ? "Müşteri adı, telefon veya adres ara…" : "Adres ara…"}
+      value={search}
+      onChange={(event) => setSearch(event.target.value)}
+    />
+
+    {/* Görünüm 1: Müşteri Teslimat Tercihleri (Geçmişe göre en çok teslim eden araç) */}
+    {subTab === "customers" && (
+      <section className="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Müşteri Bilgisi</th>
+              <th>Teslimat Adresi</th>
+              <th>Geçmiş Teslimat Dağılımı</th>
+              <th>Otomatik Atanacak Araç (En Çok Teslim Eden)</th>
+              <th>Toplam Teslimat</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {customerList.map((customer) => (
+              <tr key={customer.key}>
+                <td>
+                  <b>{customer.customerName}</b>
+                  {customer.phone && <small style={{ color: "#2563eb", fontWeight: "bold" }}>📞 {customer.phone}</small>}
+                </td>
+                <td>
+                  <b>{customer.rawAddress}</b>
+                  <small>{customer.normalizedAddress}</small>
+                </td>
+                <td>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {Object.entries(customer.counts).map(([vId, count]) => {
+                      const veh = state.vehicles.find((v) => v.id === vId);
+                      const isTop = vId === customer.topVehicleId;
+                      return (
+                        <span
+                          key={vId}
+                          style={{
+                            background: isTop ? "#dcfce7" : "#f1f5f9",
+                            color: isTop ? "#166534" : "#475569",
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            fontSize: 11,
+                            fontWeight: isTop ? "bold" : "normal",
+                            border: isTop ? "1px solid #86efac" : "1px solid #cbd5e1",
+                          }}
+                        >
+                          {veh?.shortName || vId}: <b>{count}</b>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </td>
+                <td>
+                  <select
+                    value={customer.topVehicleId}
+                    onChange={(e) => {
+                      const newVehId = e.target.value;
+                      const veh = state.vehicles.find((v) => v.id === newVehId);
+                      void mutate((current) => {
+                        if (current.customerPreferences && current.customerPreferences[customer.key]) {
+                          current.customerPreferences[customer.key].topVehicleId = newVehId;
+                          current.customerPreferences[customer.key].topVehicleName = veh?.shortName || newVehId;
+                        }
+                      });
+                    }}
+                    style={{ fontWeight: "bold", color: "#0f766e" }}
+                  >
+                    {state.vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.shortName}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td style={{ fontWeight: "bold", textAlign: "center" }}>
+                  {customer.totalDeliveries}
+                </td>
+                <td>
+                  <button
+                    className="delete"
+                    title="Bu müşterinin tercih kaydını sil"
+                    onClick={() => {
+                      void mutate((current) => {
+                        if (current.customerPreferences) {
+                          delete current.customerPreferences[customer.key];
+                        }
+                      });
+                    }}
+                  >
+                    Sil
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!customerList.length && (
+              <tr>
+                <td colSpan={6} className="empty">
+                  Henüz öğrenilmiş müşteri kaydı bulunamadı. Yukarıdaki <b>"PRM'den Geçmiş Siparişleri Tara ve Öğren"</b> butonuna basarak tüm geçmişi saniyeler içinde hafızaya alabilirsiniz.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+    )}
+
+    {/* Görünüm 2: Öğrenilmiş Adresler */}
+    {subTab === "addresses" && (
+      <section className="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Adres</th>
+              <th>Araç</th>
+              <th>Kullanım</th>
+              <th>Kaynak</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((entry) => (
+              <tr key={entry.id}>
+                <td>
+                  <b>{entry.rawExample}</b>
+                  <small>{entry.normalizedAddress}</small>
+                </td>
+                <td>
+                  <select
+                    value={entry.vehicleId}
+                    onChange={(event) =>
+                      mutate((current) => {
+                        const target = current.learnedAddresses.find((item) => item.id === entry.id);
+                        if (target) {
+                          target.vehicleId = event.target.value;
+                          target.updatedAt = Date.now();
+                        }
+                      })
+                    }
+                  >
+                    {state.vehicles.map((vehicle) => (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.shortName}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td>{entry.useCount}</td>
+                <td>{entry.source}</td>
+                <td>
+                  <button
+                    className="delete"
+                    onClick={() =>
+                      mutate((current) => {
+                        current.learnedAddresses = current.learnedAddresses.filter((item) => item.id !== entry.id);
+                      })
+                    }
+                  >
+                    Sil
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!entries.length && <tr><td colSpan={5} className="empty">Kayıt bulunamadı.</td></tr>}
+          </tbody>
+        </table>
+      </section>
+    )}
   </>;
 }
 

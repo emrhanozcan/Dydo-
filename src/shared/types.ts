@@ -272,9 +272,35 @@ export interface ExtensionState {
   whatsappRuntime: WhatsAppRuntimeStatus;
   cloudAccount: CloudAccount;
   runtime: RuntimeStatus;
+  customerPreferences: Record<string, CustomerDeliveryPreference>;
+  historyLearner: HistoryLearnerStatus;
 }
 
-export type MatchReason = "learned" | "learned_keyword" | "keyword" | "time_rule" | "unknown" | "conflict" | "inactive";
+export type MatchReason = "customer_history" | "learned" | "learned_keyword" | "keyword" | "time_rule" | "unknown" | "conflict" | "inactive";
+
+export interface CustomerDeliveryPreference {
+  key: string;
+  customerName: string;
+  phone: string;
+  rawAddress: string;
+  normalizedAddress: string;
+  counts: Record<string, number>;
+  topVehicleId: string;
+  topVehicleName: string;
+  topCount: number;
+  totalDeliveries: number;
+  lastDeliveryAt: number;
+}
+
+export interface HistoryLearnerStatus {
+  isRunning: boolean;
+  currentPage: number;
+  totalOrdersScraped: number;
+  totalCustomersLearned: number;
+  lastRunAt: number;
+  statusMessage?: string;
+  error?: string;
+}
 
 export interface MatchDecision {
   status: "matched" | "manual_required";

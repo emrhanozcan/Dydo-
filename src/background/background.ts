@@ -166,6 +166,30 @@ async function handleMessage(message: ExtensionMessage, sender: chrome.runtime.M
     case MESSAGE.RECONNECT_WHATSAPP:
       await probeWhatsAppConnection(true);
       return { ok: true };
+    case MESSAGE.START_ORDER_HISTORY_LEARN: {
+      const orderListUrl = "https://dydoprm.visionplus.com.tr/main/order-management/order-list";
+      const tabs = await chrome.tabs.query({ url: "*://dydoprm.visionplus.com.tr/main/order-management/order-list*" });
+      let tabId: number;
+      if (tabs.length > 0 && tabs[0].id) {
+        tabId = tabs[0].id;
+        await chrome.tabs.update(tabId, { active: true });
+        if (tabs[0].windowId) await chrome.windows.update(tabs[0].windowId, { focused: true });
+      } else {
+        const newTab = await chrome.tabs.create({ url: orderListUrl, active: true });
+        tabId = newTab.id!;
+        await new Promise((resolve) => setTimeout(resolve, 3500));
+      }
+
+      try {
+        const res = await chrome.tabs.sendMessage(tabId, {
+          type: MESSAGE.START_ORDER_HISTORY_LEARN,
+          maxPages: message.maxPages,
+        }) as MessageResponse;
+        return res || { ok: true };
+      } catch (err) {
+        return { ok: true, error: "Sipariş listesi sayfası açıldı. Sayfadaki [Taramayı Başlat] butonuna basarak işlemi başlatabilirsiniz." };
+      }
+    }
     case MESSAGE.PLAY_ALARM:
       return { ok: true };
     case MESSAGE.STATE_CHANGED:
