@@ -308,7 +308,7 @@ function Learned({ state, mutate, refresh, flash }: PanelProps & { refresh: () =
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
         <div style={{ maxWidth: 640 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-            <span style="font-size: 26px;">🎓</span>
+            <span style={{ fontSize: 26 }}>🎓</span>
             <h2 style={{ margin: 0, fontSize: 20, color: "#38bdf8" }}>Geçmiş Siparişlerden Adres Öğrenme Modülü</h2>
           </div>
           <p style={{ margin: "6px 0 16px 0", color: "#cbd5e1", fontSize: 13, lineHeight: 1.6 }}>
@@ -433,7 +433,7 @@ function Learned({ state, mutate, refresh, flash }: PanelProps & { refresh: () =
                 </td>
                 <td>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {Object.entries(customer.counts).map(([vId, count]) => {
+                    {Object.entries(customer.counts || {}).map(([vId, count]) => {
                       const veh = state.vehicles.find((v) => v.id === vId);
                       const isTop = vId === customer.topVehicleId;
                       return (
