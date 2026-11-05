@@ -1,0 +1,42 @@
+# Node & Dependencies
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment & Credentials (CRITICAL - DO NOT COMMIT)
+.env
+.env.local
+.env.*.local
+*.env
+!*.env.example
+
+# Android Build Outputs & Caches
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/*.iml
+android/.idea/
+
+# Android Binaries
+*.apk
+*.aab
+DyDo-PRM-Assistant.apk
+
+# Logs
+*.log
+
+# IDE & Editor Configs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS Generated
+.DS_Store
+Thumbs.db

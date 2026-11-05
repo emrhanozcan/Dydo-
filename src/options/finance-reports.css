@@ -1,0 +1,262 @@
+.report-kpis.four {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.report-kpis.five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.report-kpis article.return-income {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.report-kpis article.expense {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+.report-kpis article.net {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.report-kpis article.net.negative {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.expense-upload {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.document-upload-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 16px;
+}
+
+.document-upload-grid .expense-upload {
+  margin-bottom: 0;
+}
+
+.return-upload {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.return-button {
+  background: #2563eb;
+}
+
+.expense-upload h2 {
+  font-size: 12px;
+  margin: 0 0 4px;
+}
+
+.expense-upload p {
+  color: #64748b;
+  font-size: 11px;
+  margin: 0;
+}
+
+.pdf-button,
+.save-expense,
+.cancel-expense {
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  font-weight: 750;
+  padding: 10px 14px;
+}
+
+.pdf-button,
+.save-expense {
+  background: #0f766e;
+  color: #fff;
+}
+
+.pdf-button input {
+  display: none;
+}
+
+.expense-draft {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1.5fr 1fr 1fr auto auto;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.expense-draft label {
+  color: #64748b;
+  display: grid;
+  font-size: 10px;
+  gap: 5px;
+}
+
+.expense-draft input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.expense-draft > .extraction-status {
+  position: absolute;
+  right: 16px;
+  top: -11px;
+}
+
+.return-draft {
+  grid-template-columns: 1.5fr 1fr 1fr;
+}
+
+.return-item-editor {
+  border-top: 1px solid #dbeafe;
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+  padding-top: 12px;
+}
+
+.return-item-heading {
+  align-items: center;
+  color: #1d4ed8;
+  display: flex;
+  font-size: 10px;
+  justify-content: space-between;
+  letter-spacing: .08em;
+}
+
+.return-item-heading button {
+  background: #dbeafe;
+  border: 0;
+  border-radius: 7px;
+  color: #1d4ed8;
+  cursor: pointer;
+  font-weight: 750;
+  padding: 6px 9px;
+}
+
+.return-item-row {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(220px, 1fr) 120px 120px auto;
+}
+
+.return-item-delete {
+  min-height: 38px;
+}
+
+.return-draft-actions {
+  display: flex;
+  gap: 8px;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+}
+
+.cancel-expense {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.extraction-status {
+  border-radius: 99px;
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+
+.extraction-status.automatic {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.extraction-status.needs_review,
+.extraction-status.manual {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.product-report {
+  margin-bottom: 8px;
+  max-height: 420px;
+}
+
+.allocation-note {
+  background: #fff7ed;
+  border-radius: 8px;
+  color: #9a3412;
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+  padding: 9px 11px;
+}
+
+.pdf-link {
+  background: transparent;
+  border: 0;
+  color: #0f766e;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.expense-list tfoot {
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 800;
+}
+
+.return-product-list {
+  margin-bottom: 18px;
+  max-height: 360px;
+}
+
+.return-list {
+  margin-bottom: 18px;
+}
+
+.return-list tfoot {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.return-items {
+  min-width: 210px;
+}
+
+.return-items span {
+  display: block;
+  margin-bottom: 3px;
+}
+
+@media (max-width: 1100px) {
+  .report-kpis.four,
+  .report-kpis.five { grid-template-columns: repeat(2, 1fr); }
+  .document-upload-grid { grid-template-columns: 1fr; }
+  .expense-draft { grid-template-columns: 1fr 1fr; }
+  .return-item-row { grid-template-columns: 1fr 100px 100px auto; }
+}
+
+@media (max-width: 700px) {
+  .report-kpis.four,
+  .report-kpis.five { grid-template-columns: 1fr; }
+  .expense-upload { align-items: stretch; flex-direction: column; gap: 12px; }
+  .expense-draft { grid-template-columns: 1fr; }
+  .return-item-row { grid-template-columns: 1fr; }
+}

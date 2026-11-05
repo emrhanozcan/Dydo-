@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">DyDo PRM Mobil</string>
+    <string name="notification_channel_name">PRM Canlı Sipariş Bildirimleri</string>
+    <string name="notification_channel_desc">Yeni DyDo siparişleri geldiğinde anlık bildirim gönderir.</string>
+</resources>
+
