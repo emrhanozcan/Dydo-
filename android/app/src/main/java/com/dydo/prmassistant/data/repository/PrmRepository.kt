@@ -33,15 +33,42 @@ class PrmRepository {
             .build()
     }
 
-    suspend fun login(email: String, password: String): Result<Boolean> = withContext(Dispatchers.IO) {
+    suspend fun login(usernameOrEmail: String, password: String): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
-            if (email.isNotBlank() && password.isNotBlank()) {
-                CloudConfig.userEmail = email
-                CloudConfig.isLoggedIn = true
-                Result.success(true)
-            } else {
-                Result.failure(Exception("Lütfen e-posta ve şifrenizi giriniz."))
+            val cleanUser = usernameOrEmail.trim().lowercase()
+            val cleanPass = password.trim()
+
+            if (cleanUser.isBlank() || cleanPass.isBlank()) {
+                return@withContext Result.failure(Exception("Lütfen kullanıcı adı ve şifrenizi giriniz."))
             }
+
+            // 1. Sürücü hesaplarını kontrol et (mehmetali, volkan, mehmet, admin)
+            val driver = CloudConfig.DRIVER_ACCOUNTS.find { it.username.lowercase() == cleanUser }
+            if (driver != null) {
+                if (driver.password == cleanPass) {
+                    CloudConfig.currentDriver = driver
+                    CloudConfig.userEmail = driver.username
+                    CloudConfig.isLoggedIn = true
+                    return@withContext Result.success(true)
+                } else {
+                    return@withContext Result.failure(Exception("Girdiğiniz şifre hatalı!"))
+                }
+            }
+
+            // 2. Yedek yönetici e-posta girişi kontrolü
+            if (cleanUser == "emirhnnozcn@gmail.com" && (cleanPass == "78783434Eo!!" || cleanPass == "admin")) {
+                CloudConfig.currentDriver = com.dydo.prmassistant.data.models.DriverAccount(
+                    username = "admin",
+                    displayName = "Yönetici (Tüm Araçlar)",
+                    assignedVehicle = "ALL",
+                    password = cleanPass
+                )
+                CloudConfig.userEmail = cleanUser
+                CloudConfig.isLoggedIn = true
+                return@withContext Result.success(true)
+            }
+
+            Result.failure(Exception("Kullanıcı adı veya şifre hatalı."))
         } catch (e: Exception) {
             Result.failure(e)
         }

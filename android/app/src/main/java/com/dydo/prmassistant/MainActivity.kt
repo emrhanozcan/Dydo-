@@ -11,8 +11,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -43,6 +43,10 @@ class MainActivity : ComponentActivity() {
 
         val prefs = getSharedPreferences("dydo_prefs", Context.MODE_PRIVATE)
         val savedLoggedIn = prefs.getBoolean("is_logged_in", false)
+        val savedUsername = prefs.getString("saved_username", null)
+        if (savedUsername != null) {
+            CloudConfig.currentDriver = CloudConfig.DRIVER_ACCOUNTS.find { it.username == savedUsername }
+        }
         CloudConfig.isLoggedIn = savedLoggedIn
 
         if (savedLoggedIn) {
@@ -63,7 +67,10 @@ class MainActivity : ComponentActivity() {
                         LoginScreen(
                             repository = repository,
                             onLoginSuccess = {
-                                prefs.edit().putBoolean("is_logged_in", true).apply()
+                                prefs.edit()
+                                    .putBoolean("is_logged_in", true)
+                                    .putString("saved_username", CloudConfig.currentDriver?.username)
+                                    .apply()
                                 isLoggedIn = true
                                 OrderMonitorService.start(this@MainActivity)
                             }
@@ -72,7 +79,9 @@ class MainActivity : ComponentActivity() {
                         MainScreen(
                             repository = repository,
                             onLogout = {
-                                prefs.edit().putBoolean("is_logged_in", false).apply()
+                                prefs.edit().clear().apply()
+                                CloudConfig.isLoggedIn = false
+                                CloudConfig.currentDriver = null
                                 isLoggedIn = false
                                 OrderMonitorService.stop(this@MainActivity)
                             }
@@ -109,7 +118,7 @@ fun MainScreen(
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.ListAlt, contentDescription = "Siparişler") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = "Siparişler") },
                     label = { Text("Siparişler") },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = DyDoRed,
@@ -144,7 +153,7 @@ fun MainScreen(
     ) { padding ->
         androidx.compose.foundation.layout.Box(modifier = Modifier.padding(padding)) {
             when (selectedTab) {
-                0 -> LiveOrdersScreen(repository = repository)
+                0 -> LiveOrdersScreen(repository = repository, onLogout = onLogout)
                 1 -> ReportsScreen(repository = repository)
                 2 -> SettingsScreen(onLogout = onLogout)
             }

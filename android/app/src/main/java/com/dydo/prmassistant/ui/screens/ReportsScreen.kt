@@ -1,14 +1,19 @@
 package com.dydo.prmassistant.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,26 +57,59 @@ fun ReportsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Günlük Raporlar", fontWeight = FontWeight.Bold, fontSize = 20.sp) },
-                actions = {
-                    IconButton(onClick = { loadReports() }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color(0xFF0F172A), Color(0xFF1E293B))
+                        )
+                    )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("📊", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Günlük Dağıtım Raporu",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 19.sp,
+                                color = Color.White
+                            )
+                        }
+                        Text(
+                            "Canlı Dağıtım & Ciro İstatistikleri",
+                            fontSize = 12.sp,
+                            color = Color(0xFF94A3B8),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { loadReports() },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color.White.copy(alpha = 0.12f), CircleShape)
+                    ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Yenile", tint = Color.White)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DyDoRed,
-                    titleContentColor = Color.White
-                )
-            )
+                }
+            }
         }
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF8FAFC))
-                .padding(16.dp)
+                .background(Color(0xFFF1F5F9))
         ) {
             if (isLoading && report == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -79,80 +117,183 @@ fun ReportsScreen(
                 }
             } else {
                 val r = report ?: ReportSummary()
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    // Summary cards
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Özet KPI Kartları (Ciro ve Toplam Sipariş)
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Toplam Sipariş", fontSize = 12.sp, color = Color.Gray)
-                                Text("${r.totalOrders} Adet", fontSize = 24.sp, fontWeight = FontWeight.Black, color = DyDoRed)
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Toplam Sipariş", fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = Color(0xFFEFF6FF),
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("📦", fontSize = 14.sp)
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        "${r.totalOrders} Adet",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = DyDoRed
+                                    )
+                                }
                             }
-                        }
 
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Toplam Ciro", fontSize = 12.sp, color = Color.Gray)
-                                Text(r.formattedRevenue, fontSize = 20.sp, fontWeight = FontWeight.Black, color = DyDoOrange)
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Toplam Ciro", fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = Color(0xFFECFDF5),
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("💰", fontSize = 14.sp)
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        r.formattedRevenue,
+                                        fontSize = 21.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF16A34A)
+                                    )
+                                }
                             }
                         }
                     }
 
-                    // Vehicle breakdown card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Araç Dağılımı",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            r.vehicleStats.forEach { stat ->
+                    // Araç Dağılım Kartı
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(18.dp)) {
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
+                                    modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("🚚", fontSize = 18.sp)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(stat.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                                    }
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = Color(0xFFEFF6FF)
-                                    ) {
+                                    Column {
                                         Text(
-                                            "${stat.count} Sipariş",
-                                            color = Color(0xFF2563EB),
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                            "🚚 Araç Bazlı Dağıtım",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFF0F172A)
+                                        )
+                                        Text(
+                                            "Araç 1, Araç 2 ve Araç 3 İş Yükü",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF64748B)
                                         )
                                     }
                                 }
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                if (r.vehicleStats.isEmpty()) {
+                                    Text(
+                                        "Henüz araç dağılım verisi oluşmadı.",
+                                        color = Color.Gray,
+                                        fontSize = 13.sp,
+                                        modifier = Modifier.padding(vertical = 12.dp)
+                                    )
+                                } else {
+                                    r.vehicleStats.forEach { stat ->
+                                        val ratio = if (r.totalOrders > 0) stat.count.toFloat() / r.totalOrders.toFloat() else 0f
+                                        Surface(
+                                            shape = RoundedCornerShape(14.dp),
+                                            color = Color(0xFFF8FAFC),
+                                            border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 5.dp)
+                                        ) {
+                                            Column(modifier = Modifier.padding(12.dp)) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Text("🚚", fontSize = 18.sp)
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(
+                                                            stat.name,
+                                                            fontWeight = FontWeight.Black,
+                                                            fontSize = 15.sp,
+                                                            color = Color(0xFF0F172A)
+                                                        )
+                                                    }
+                                                    Surface(
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        color = Color(0xFFEFF6FF),
+                                                        border = BorderStroke(1.dp, Color(0xFFBFDBFE))
+                                                    ) {
+                                                        Text(
+                                                            "${stat.count} Sipariş",
+                                                            color = Color(0xFF1D4ED8),
+                                                            fontWeight = FontWeight.Black,
+                                                            fontSize = 13.sp,
+                                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.height(8.dp))
+
+                                                // İlerleme Çubuğu
+                                                LinearProgressIndicator(
+                                                    progress = { ratio },
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(6.dp),
+                                                    color = DyDoRed,
+                                                    trackColor = Color(0xFFE2E8F0)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -161,4 +302,3 @@ fun ReportsScreen(
         }
     }
 }
-

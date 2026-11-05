@@ -83,14 +83,21 @@ class OrderMonitorService : Service() {
                         if (result.isSuccess) {
                             val orders = result.getOrNull() ?: emptyList()
 
+                            val targetVeh = CloudConfig.currentDriver?.assignedVehicle
+                            val relevantOrders = if (targetVeh != null && targetVeh != "ALL") {
+                                orders.filter { it.currentVehicle.contains(targetVeh, ignoreCase = true) || it.currentVehicle.contains("Atanmadı") }
+                            } else {
+                                orders
+                            }
+
                             if (isFirstCheck) {
                                 // İlk başlangıçta mevcut tüm siparişleri hafızaya al ve bildirim atılmış say
                                 PrmNotificationHelper.markAllAsNotified(applicationContext, orders.map { it.id })
                                 seenOrderIds.addAll(orders.map { it.id })
                                 isFirstCheck = false
                             } else {
-                                // Sadece daha önce bildirim atılmamış yeni siparişleri bul
-                                val newOrders = orders.filter { !seenOrderIds.contains(it.id) && !PrmNotificationHelper.hasBeenNotified(applicationContext, it.id) }
+                                // Sadece bu araca ait ve daha önce bildirim atılmamış yeni siparişleri bul
+                                val newOrders = relevantOrders.filter { !seenOrderIds.contains(it.id) && !PrmNotificationHelper.hasBeenNotified(applicationContext, it.id) }
                                 for (newOrder in newOrders) {
                                     seenOrderIds.add(newOrder.id)
                                     PrmNotificationHelper.showNotification(
