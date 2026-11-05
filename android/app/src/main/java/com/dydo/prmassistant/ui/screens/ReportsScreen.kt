@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dydo.prmassistant.data.models.Order
 import com.dydo.prmassistant.data.models.ReportSummary
 import com.dydo.prmassistant.data.repository.PrmRepository
 import com.dydo.prmassistant.ui.theme.DyDoOrange
@@ -30,6 +31,7 @@ fun ReportsScreen(
     repository: PrmRepository
 ) {
     var report by remember { mutableStateOf<ReportSummary?>(null) }
+    var deliveredOrders by remember { mutableStateOf<List<Order>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -37,9 +39,13 @@ fun ReportsScreen(
         isLoading = true
         coroutineScope.launch {
             val res = repository.getReports()
+            val ordersRes = repository.getOrders(onlyActive = false)
             isLoading = false
             if (res.isSuccess) {
                 report = res.getOrNull()
+            }
+            if (ordersRes.isSuccess) {
+                deliveredOrders = ordersRes.getOrNull() ?: emptyList()
             }
         }
     }
@@ -49,8 +55,12 @@ fun ReportsScreen(
         while (true) {
             kotlinx.coroutines.delay(15_000)
             val res = repository.getReports()
+            val ordersRes = repository.getOrders(onlyActive = false)
             if (res.isSuccess) {
                 report = res.getOrNull()
+            }
+            if (ordersRes.isSuccess) {
+                deliveredOrders = ordersRes.getOrNull() ?: emptyList()
             }
         }
     }
@@ -289,6 +299,100 @@ fun ReportsScreen(
                                                         .height(6.dp),
                                                     color = DyDoRed,
                                                     trackColor = Color(0xFFE2E8F0)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Geçmiş Teslim Edilen Sipariş Kayıtları Listesi
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(18.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            "📋 Geçmiş Sipariş Kayıtları",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFF0F172A)
+                                        )
+                                        Text(
+                                            "Buluttaki teslim edilmiş geçmiş kayıtlar",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFFF1F5F9)
+                                    ) {
+                                        Text(
+                                            "${deliveredOrders.size} Kayıt",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF475569),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                if (deliveredOrders.isEmpty()) {
+                                    Text(
+                                        "Geçmiş teslim kaydı bulunamadı.",
+                                        color = Color.Gray,
+                                        fontSize = 13.sp,
+                                        modifier = Modifier.padding(vertical = 12.dp)
+                                    )
+                                } else {
+                                    deliveredOrders.take(100).forEach { order ->
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = Color(0xFFF8FAFC),
+                                            border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(12.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = order.customerName,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 14.sp,
+                                                        color = Color(0xFF0F172A)
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = "${order.currentVehicle.replace("İSTANBUL-ZEKERİYAKÖY ", "")} • ${order.createdAt}",
+                                                        fontSize = 11.sp,
+                                                        color = Color(0xFF64748B)
+                                                    )
+                                                }
+                                                Text(
+                                                    text = order.displayAmount,
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 14.sp,
+                                                    color = DyDoRed
                                                 )
                                             }
                                         }

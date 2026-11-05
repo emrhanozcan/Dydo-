@@ -1,5 +1,6 @@
 import type { PrmOrder, ReportOrderRecord, Vehicle } from "../shared/types";
 import { getState, updateState } from "../storage/storage";
+import { parsePrmAmountToMinor, parsePrmDate, resolveVehicleId } from "../core/reportEngine";
 
 export interface SupabaseConfig {
   supabaseUrl: string;
@@ -32,6 +33,8 @@ export async function initializeCloudSync(): Promise<void> {
       s.cloudAccount.syncStatus = "connected";
       s.cloudAccount.autoSync = true;
     });
+    // Arka planda buluttaki tüm geçmiş siparişleri çekip raporları doldur
+    void pullHistoricalOrdersFromCloud();
   }
 }
 
@@ -87,6 +90,13 @@ export async function loginCloud(email: string, password: string): Promise<{ suc
       s.cloudAccount.lastError = undefined;
     });
 
+    // Giriş yapıldığı an buluttaki tüm geçmiş siparişleri çek ve raporlara aktar
+    try {
+      await pullHistoricalOrdersFromCloud();
+    } catch (pullErr) {
+      console.warn("[PRM Supabase] Error pulling history on login:", pullErr);
+    }
+
     return { success: true };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -95,6 +105,90 @@ export async function loginCloud(email: string, password: string): Promise<{ suc
       s.cloudAccount.lastError = errorMsg;
     });
     return { success: false, error: errorMsg };
+  }
+}
+
+// =============================================================================
+// ☁️ BULUTTAKİ TÜM GEÇMİŞ SİPARİŞLERİ ÇEKİP RAPORLARA AKTARAN FONKSİYON
+// =============================================================================
+export async function pullHistoricalOrdersFromCloud(): Promise<number> {
+  if (!isCloudConfigured()) return 0;
+  const config = getSupabaseConfig();
+  if (!config.supabaseUrl || !config.anonKey || config.anonKey.includes("YOUR_")) {
+    return 0;
+  }
+
+  try {
+    const res = await fetch(`${config.supabaseUrl}/rest/v1/orders?select=*&limit=5000`, {
+      method: "GET",
+      headers: getHeaders(config.anonKey),
+    });
+
+    if (!res.ok) {
+      console.warn("[PRM Supabase] Error fetching cloud orders:", await res.text());
+      return 0;
+    }
+
+    const cloudOrders = (await res.json()) as Array<{
+      id: string;
+      secondary_id?: string;
+      customer_name?: string;
+      phone?: string;
+      raw_address?: string;
+      normalized_address?: string;
+      details?: string;
+      amount?: string;
+      payment_type?: string;
+      status?: string;
+      current_vehicle?: string;
+      created_at?: string;
+      updated_at?: number;
+    }>;
+
+    if (!Array.isArray(cloudOrders) || cloudOrders.length === 0) return 0;
+
+    await updateState((state) => {
+      let importedCount = 0;
+      for (const order of cloudOrders) {
+        if (!order.id) continue;
+        const previous = state.reportOrders[order.id];
+        const parsedDate = parsePrmDate(order.created_at, order.updated_at || Date.now());
+        const amountMinor = parsePrmAmountToMinor(order.amount) || previous?.amountMinor || 0;
+        const vehicleId = resolveVehicleId(order.current_vehicle, state.vehicles) || previous?.vehicleId;
+
+        // Platform / Kanal tespiti
+        const custLower = (order.customer_name || "").toLowerCase();
+        const detailsLower = (order.details || "").toLowerCase();
+        let channel = "PRM";
+        if (custLower.includes("getir") || detailsLower.includes("getir")) {
+          channel = "Getir";
+        } else if (custLower.includes("trendyol") || detailsLower.includes("trendyol")) {
+          channel = "Trendyol";
+        } else if (custLower.includes("yemeksepeti")) {
+          channel = "Yemeksepeti";
+        }
+
+        state.reportOrders[order.id] = {
+          orderId: order.id,
+          customerName: order.customer_name || previous?.customerName || "Bilinmeyen Müşteri",
+          vehicleId: vehicleId,
+          channel: channel,
+          amountMinor: amountMinor,
+          rawAmount: order.amount || previous?.rawAmount,
+          details: order.details || previous?.details,
+          orderCreatedAt: parsedDate,
+          capturedAt: previous?.capturedAt || order.updated_at || Date.now(),
+          updatedAt: order.updated_at || Date.now(),
+        };
+        importedCount++;
+      }
+      state.cloudAccount.syncedOrdersCount = Object.keys(state.reportOrders).length;
+    });
+
+    return cloudOrders.length;
+  } catch (err) {
+    console.error("[PRM Supabase] Error pulling historical orders:", err);
+    return 0;
   }
 }
 

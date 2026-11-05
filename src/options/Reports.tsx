@@ -5,6 +5,7 @@ import { createId } from "../shared/id";
 import type { ExtensionState } from "../shared/types";
 import { deleteExpensePdf, openExpensePdf, saveExpensePdf } from "../storage/pdfArchive";
 import { readPdfText } from "./pdfReader";
+import { pullHistoricalOrdersFromCloud } from "../cloud/cloudSync";
 
 interface ExpenseDraft { file: File; vendor: string; date: string; amount: string; status: "automatic" | "needs_review" }
 interface ReturnDraftItem { name: string; quantity: string; unit: string }
@@ -26,6 +27,7 @@ export function Reports({ state, mutate, flash }: {
   const [returnDraft, setReturnDraft] = useState<ReturnDraft | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [returnPdfLoading, setReturnPdfLoading] = useState(false);
+  const [syncingCloud, setSyncingCloud] = useState(false);
   const pageSize = 100;
   const period = periodType === "day"
     ? periodForDay(day)
@@ -228,6 +230,25 @@ export function Reports({ state, mutate, flash }: {
         <label>Başlangıç<input type="date" value={customStart} max={customEnd} onChange={(event) => setCustomStart(event.target.value)} /></label>
         <label>Bitiş<input type="date" value={customEnd} min={customStart} onChange={(event) => setCustomEnd(event.target.value)} /></label>
       </>}
+      <button
+        type="button"
+        className="clear-daily-report"
+        style={{ background: "#2563eb", borderColor: "#1d4ed8", color: "#fff", fontWeight: "bold" }}
+        disabled={syncingCloud}
+        onClick={async () => {
+          setSyncingCloud(true);
+          try {
+            const count = await pullHistoricalOrdersFromCloud();
+            flash(`☁️ Buluttan ${count} adet geçmiş sipariş başarıyla çekildi ve hesabınıza aktarıldı!`);
+          } catch {
+            flash("Buluttan geçmiş veri çekilirken hata oluştu.");
+          } finally {
+            setSyncingCloud(false);
+          }
+        }}
+      >
+        {syncingCloud ? "☁️ Buluttan Çekiliyor…" : "☁️ Buluttaki Geçmiş Siparişleri Çek"}
+      </button>
       {periodType === "day" && <button className="clear-daily-report" disabled={report.orderCount + expenses.documents.length + returns.documents.length === 0} onClick={() => void clearDailyReport()}>Günlük Raporu Temizle</button>}
     </section>
 
